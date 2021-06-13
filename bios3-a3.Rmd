@@ -1,0 +1,250 @@
+---
+title: "Biostatistics 3 Assignment 3"
+author: "Kevin Lee (LXXKEV004)"
+date: "03/06/2021"
+output: pdf_document
+bibliography: references.bib
+---
+
+Data file used for this assignment: *assign1_data18.csv*
+
+``` {r setup, include = FALSE}
+
+library(readxl)
+library(dplyr)
+library(survival)
+library(flexsurvreg)
+library(survminer)
+library(broom)
+
+```
+
+``` {r read_data, include = FALSE}
+# Read in data
+path <- list.files("in", full.names = T)
+d <- read_excel(path)
+
+summary(d)
+d %>% count(sex)
+d %>% count(chf)
+d %>% count(yrgrp)
+
+```
+
+``` {r cph_age, include = FALSE}
+# Age
+# Distribution
+cox_univ_age <- coxph(
+  Surv(time = lenfol, event = fstat) ~ age,
+  data = d
+)
+
+summary(cox_univ_age)
+
+tidy(cox_univ_age, exponentiate = T, conf.int = T)
+
+```
+
+``` {r cph_sex, include = FALSE}
+# Sex (1 == female)
+cox_univ_sex <- coxph(
+  Surv(time = lenfol, event = fstat) ~ sex,
+  data = d
+)
+
+summary(cox_univ_sex)
+
+tidy(cox_univ_sex, exponentiate = T, conf.int = T)
+```
+
+``` {r cph_los, include = FALSE}
+# Length of stay
+cox_univ_los <- coxph(
+  Surv(time = lenfol, event = fstat) ~ lenstay,
+  data = d
+)
+
+summary(cox_univ_los)
+
+tidy(cox_univ_los, exponentiate = T, conf.int = T)
+```
+
+``` {r cox_cohort, include = FALSE}
+# Grouped cohort year
+cox_univ_cohort <- coxph(
+  Surv(time = lenfol, event = fstat) ~ yrgrp,
+  data = d
+)
+
+summary(cox_univ_cohort)
+
+tidy(cox_univ_cohort, exponentiate = T, conf.int = T)
+```
+
+``` {r cph_chf, include = FALSE}
+# Heart failure complications
+cox_univ_chf <- coxph(
+  Surv(time = lenfol, event = fstat) ~ chf,
+  data = d
+)
+
+summary(cox_univ_chf)
+
+tidy(cox_univ_chf, exponentiate = T, conf.int = T)
+```
+
+``` {r cph_multi, include = FALSE}
+cox_multi <- coxph(
+  Surv(time = lenfol, event = fstat) ~ age + sex + lenstay + yrgrp + chf,
+  data = d
+)
+
+summary(cox_multi)
+
+tidy(cox_multi, exponentiate = T, conf.int = T)
+
+```
+
+``` {r exp_age, include = FALSE}
+exp_age <- survreg(
+  Surv(time = lenfol, event = fstat) ~ age,
+  data = d,
+  dist = "exponential"
+)
+
+summary(exp_age)
+
+tidy(exp_age, conf.int = T)
+```
+
+``` {r exp_sex, include = FALSE}
+exp_sex <- survreg(
+  Surv(time = lenfol, event = fstat) ~ sex,
+  data = d,
+  dist = "exponential"
+)
+
+summary(exp_sex)
+
+tidy(exp_sex, conf.int = T)
+```
+
+``` {r exp_los, include = FALSE}
+exp_los <- survreg(
+  Surv(time = lenfol, event = fstat) ~ lenstay,
+  data = d,
+  dist = "exponential"
+)
+
+summary(exp_los)
+
+tidy(exp_los, conf.int = T)
+```
+
+``` {r exp_cohort, include = FALSE}
+exp_cohort <- survreg(
+  Surv(time = lenfol, event = fstat) ~ yrgrp,
+  data = d,
+  dist = "exponential"
+)
+
+summary(exp_cohort)
+
+tidy(exp_cohort, conf.int = T)
+```
+
+``` {r exp_chf, include = FALSE}
+exp_chf <- survreg(
+  Surv(time = lenfol, event = fstat) ~ chf,
+  data = d,
+  dist = "exponential"
+)
+
+summary(exp_chf)
+
+tidy(exp_chf, conf.int = T)
+```
+
+``` {r exp_multi, include = FALSE}
+exp_multi <- survreg(
+  Surv(time = lenfol, event = fstat) ~ age + sex + lenstay + yrgrp + chf,
+  data = d,
+  dist = "exponential"
+)
+
+summary(exp_multi)
+
+tidy(exp_multi, conf.int = T)
+```
+
+``` {r weibull_age, include = FALSE}
+weibull_age <- survreg(
+  Surv(time = lenfol, event = fstat) ~ age,
+  data = d,
+  dist = "weibull"
+)
+
+summary(weibull_age)
+
+tidy(weibull_age, conf.int = T)
+```
+
+``` {r weibull_sex, include = FALSE}
+exp_sex <- survreg(
+  Surv(time = lenfol, event = fstat) ~ sex,
+  data = d,
+  dist = "exponential"
+)
+
+summary(exp_sex)
+
+tidy(exp_sex, conf.int = T)
+```
+
+``` {r weibull_los, include = FALSE}
+weibull_los <- survreg(
+  Surv(time = lenfol, event = fstat) ~ lenstay,
+  data = d,
+  dist = "weibull"
+)
+
+summary(weibull_los)
+
+tidy(weibull_los, conf.int = T)
+```
+
+``` {r weibull_cohort, include = FALSE}
+weibull_cohort <- survreg(
+  Surv(time = lenfol, event = fstat) ~ yrgrp,
+  data = d,
+  dist = "weibull"
+)
+
+summary(weibull_cohort)
+
+tidy(weibull_cohort, conf.int = T)
+```
+
+``` {r weibull_chf, include = FALSE}
+weibull_chf <- survreg(
+  Surv(time = lenfol, event = fstat) ~ chf,
+  data = d,
+  dist = "weibull"
+)
+
+summary(weibull_chf)
+
+tidy(weibull_chf, conf.int = T)
+```
+
+``` {r weibull_multi, include = FALSE}
+weibull_multi <- survreg(
+  Surv(time = lenfol, event = fstat) ~ age + sex + lenstay + yrgrp + chf,
+  data = d,
+  dist = "weibull"
+)
+
+summary(weibull_multi)
+
+tidy(weibull_multi, conf.int = T)
+```
