@@ -11,10 +11,11 @@ Data file used for this assignment: *assign1_data18.csv*
 ``` {r setup, include = FALSE}
 
 library(readxl)
+library(plyr)
 library(dplyr)
 library(survival)
-library(flexsurvreg)
 library(survminer)
+library(rms)
 library(broom)
 
 ```
@@ -41,7 +42,16 @@ cox_univ_age <- coxph(
 
 summary(cox_univ_age)
 
-tidy(cox_univ_age, exponentiate = T, conf.int = T)
+# Function to get univariate tidy output
+cox_tidy <-  function(model) {
+  tidy(model, exponentiate = T, conf.int = T) %>%
+    mutate(
+      exp = paste0(
+        round(estimate, 2), " (", round(conf.low, 2), ", ", round(conf.high, 2), ")")) %>% 
+    select(term, exp)
+}
+
+cox_tidy(cox_univ_age)
 
 ```
 
@@ -54,7 +64,7 @@ cox_univ_sex <- coxph(
 
 summary(cox_univ_sex)
 
-tidy(cox_univ_sex, exponentiate = T, conf.int = T)
+cox_tidy(cox_univ_sex)
 ```
 
 ``` {r cph_los, include = FALSE}
@@ -66,7 +76,7 @@ cox_univ_los <- coxph(
 
 summary(cox_univ_los)
 
-tidy(cox_univ_los, exponentiate = T, conf.int = T)
+cox_tidy(cox_univ_los)
 ```
 
 ``` {r cox_cohort, include = FALSE}
@@ -78,7 +88,7 @@ cox_univ_cohort <- coxph(
 
 summary(cox_univ_cohort)
 
-tidy(cox_univ_cohort, exponentiate = T, conf.int = T)
+cox_tidy(cox_univ_cohort)
 ```
 
 ``` {r cph_chf, include = FALSE}
@@ -90,7 +100,7 @@ cox_univ_chf <- coxph(
 
 summary(cox_univ_chf)
 
-tidy(cox_univ_chf, exponentiate = T, conf.int = T)
+cox_tidy(cox_univ_chf)
 ```
 
 ``` {r cph_multi, include = FALSE}
@@ -101,7 +111,7 @@ cox_multi <- coxph(
 
 summary(cox_multi)
 
-tidy(cox_multi, exponentiate = T, conf.int = T)
+cox_tidy(cox_multi)
 
 ```
 
@@ -247,4 +257,81 @@ weibull_multi <- survreg(
 summary(weibull_multi)
 
 tidy(weibull_multi, conf.int = T)
+```
+
+``` {r sex_difference, echo = FALSE}
+st <- survfit(
+  Surv(time = lenfol, event = fstat) ~ sex,
+  data = d
+)
+
+ggsurvplot(
+  st, data = d,
+  xlab = "Time",
+  legend.labs = c("Male", "Female"),
+  risk.table = "abs_pct",
+  pval = T, pval.coord = c(30, 0.75),
+  pval.method = T, pval.method.coord = c(30, 0.85),
+  fontsize = 2.5
+)
+```
+
+``` {r model_comparison, echo = FALSE}
+# This code chunk is thanks to https://rstudio-pubs-static.s3.amazonaws.com/5564_bc9e2d9a458c4660aa82882df90b7a6b.html
+# KM by lvh
+km_chf <- npsurv(
+  Surv(time = lenfol, event = fstat) ~ chf,
+  data = d
+)
+
+## Plot KM curves
+survplot(fit  = km_chf,
+         conf = c("none","bands","bars")[1],
+         xlab = "", ylab = "Survival",
+         label.curves = TRUE,                     # label curves directly
+         # time.inc = 100,                          # time increment
+         n.risk   = TRUE,                         # show number at risk
+         )
+
+## Plot Cox prediction (use survfit)
+lines(
+  survfit(cox_univ_chf, newdata = data.frame(chf = 0:1)), 
+  col = "green", lty = 1:2, mark.time = FALSE
+)
+
+## Define a function to plot survreg prediction by gender
+survreg.curves <- function(
+  model, 
+  col = "black", 
+  values = c(0, 1),
+  seq.quantiles = seq(from = 0.00, to = 1.00, by = 0.01)
+) {
+  l_ply(
+    values, 
+    function(X) {
+      lines(x = predict(
+        model,                    # survreg object to use
+        newdata = data.frame(chf = X), # Dataset to perform prediction for
+        type = "quantile",                # Predict survival time (X-axis values) given event quantile
+        p = seq.quantiles),               # Vector of quantiles (Y-axis values)
+        y = (1 - seq.quantiles),              # Change to survival quantile (proportion remaining)
+        col = col, lty = X + 1)               # COLor and Line TYpe
+    }
+  )
+}
+
+## Plot exponential model prediction
+survreg.curves(exp_chf, "red")
+
+## Plot Weibull model prediction
+survreg.curves(weibull_chf, "blue")
+
+## Add legends
+legend(
+  x = "topright",
+  legend = c("Kaplan-Meier", "Cox (Efron)", "Exponential", "Weibull"),
+  lwd = 2, bty = "n",
+  col = c("black", "green", "red", "blue")
+)
+
 ```
