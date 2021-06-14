@@ -2,13 +2,17 @@
 title: "Biostatistics 3 Assignment 3"
 author: "Kevin Lee (LXXKEV004)"
 date: "03/06/2021"
-output: pdf_document
+output: 
+  html_document:
+    theme: cosmo
 bibliography: references.bib
 ---
 
-Data file used for this assignment: *assign1_data18.csv*
+Data file used for this assignment: *whas.xls*
 
 ``` {r setup, include = FALSE}
+
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 
 library(readxl)
 library(plyr)
@@ -17,6 +21,7 @@ library(survival)
 library(survminer)
 library(rms)
 library(broom)
+library(kableExtra)
 
 ```
 
@@ -35,72 +40,52 @@ d %>% count(yrgrp)
 ``` {r cph_age, include = FALSE}
 # Age
 # Distribution
-cox_univ_age <- coxph(
+cox_age <- coxph(
   Surv(time = lenfol, event = fstat) ~ age,
   data = d
 )
 
-summary(cox_univ_age)
-
-# Function to get univariate tidy output
-cox_tidy <-  function(model) {
-  tidy(model, exponentiate = T, conf.int = T) %>%
-    mutate(
-      exp = paste0(
-        round(estimate, 2), " (", round(conf.low, 2), ", ", round(conf.high, 2), ")")) %>% 
-    select(term, exp)
-}
-
-cox_tidy(cox_univ_age)
-
+summary(cox_age)
 ```
 
 ``` {r cph_sex, include = FALSE}
 # Sex (1 == female)
-cox_univ_sex <- coxph(
+cox_sex <- coxph(
   Surv(time = lenfol, event = fstat) ~ sex,
   data = d
 )
 
-summary(cox_univ_sex)
-
-cox_tidy(cox_univ_sex)
+summary(cox_sex)
 ```
 
 ``` {r cph_los, include = FALSE}
 # Length of stay
-cox_univ_los <- coxph(
+cox_los <- coxph(
   Surv(time = lenfol, event = fstat) ~ lenstay,
   data = d
 )
 
-summary(cox_univ_los)
-
-cox_tidy(cox_univ_los)
+summary(cox_los)
 ```
 
 ``` {r cox_cohort, include = FALSE}
 # Grouped cohort year
-cox_univ_cohort <- coxph(
+cox_cohort <- coxph(
   Surv(time = lenfol, event = fstat) ~ yrgrp,
   data = d
 )
 
-summary(cox_univ_cohort)
-
-cox_tidy(cox_univ_cohort)
+summary(cox_cohort)
 ```
 
 ``` {r cph_chf, include = FALSE}
 # Heart failure complications
-cox_univ_chf <- coxph(
+cox_chf <- coxph(
   Surv(time = lenfol, event = fstat) ~ chf,
   data = d
 )
 
-summary(cox_univ_chf)
-
-cox_tidy(cox_univ_chf)
+summary(cox_chf)
 ```
 
 ``` {r cph_multi, include = FALSE}
@@ -110,9 +95,6 @@ cox_multi <- coxph(
 )
 
 summary(cox_multi)
-
-cox_tidy(cox_multi)
-
 ```
 
 ``` {r exp_age, include = FALSE}
@@ -123,8 +105,6 @@ exp_age <- survreg(
 )
 
 summary(exp_age)
-
-tidy(exp_age, conf.int = T)
 ```
 
 ``` {r exp_sex, include = FALSE}
@@ -135,8 +115,6 @@ exp_sex <- survreg(
 )
 
 summary(exp_sex)
-
-tidy(exp_sex, conf.int = T)
 ```
 
 ``` {r exp_los, include = FALSE}
@@ -147,8 +125,6 @@ exp_los <- survreg(
 )
 
 summary(exp_los)
-
-tidy(exp_los, conf.int = T)
 ```
 
 ``` {r exp_cohort, include = FALSE}
@@ -159,8 +135,6 @@ exp_cohort <- survreg(
 )
 
 summary(exp_cohort)
-
-tidy(exp_cohort, conf.int = T)
 ```
 
 ``` {r exp_chf, include = FALSE}
@@ -171,8 +145,6 @@ exp_chf <- survreg(
 )
 
 summary(exp_chf)
-
-tidy(exp_chf, conf.int = T)
 ```
 
 ``` {r exp_multi, include = FALSE}
@@ -183,8 +155,6 @@ exp_multi <- survreg(
 )
 
 summary(exp_multi)
-
-tidy(exp_multi, conf.int = T)
 ```
 
 ``` {r weibull_age, include = FALSE}
@@ -195,20 +165,16 @@ weibull_age <- survreg(
 )
 
 summary(weibull_age)
-
-tidy(weibull_age, conf.int = T)
 ```
 
 ``` {r weibull_sex, include = FALSE}
-exp_sex <- survreg(
+weibull_sex <- survreg(
   Surv(time = lenfol, event = fstat) ~ sex,
   data = d,
-  dist = "exponential"
+  dist = "weibull"
 )
 
-summary(exp_sex)
-
-tidy(exp_sex, conf.int = T)
+summary(weibull_sex)
 ```
 
 ``` {r weibull_los, include = FALSE}
@@ -219,8 +185,6 @@ weibull_los <- survreg(
 )
 
 summary(weibull_los)
-
-tidy(weibull_los, conf.int = T)
 ```
 
 ``` {r weibull_cohort, include = FALSE}
@@ -231,8 +195,6 @@ weibull_cohort <- survreg(
 )
 
 summary(weibull_cohort)
-
-tidy(weibull_cohort, conf.int = T)
 ```
 
 ``` {r weibull_chf, include = FALSE}
@@ -243,8 +205,6 @@ weibull_chf <- survreg(
 )
 
 summary(weibull_chf)
-
-tidy(weibull_chf, conf.int = T)
 ```
 
 ``` {r weibull_multi, include = FALSE}
@@ -255,11 +215,139 @@ weibull_multi <- survreg(
 )
 
 summary(weibull_multi)
-
-tidy(weibull_multi, conf.int = T)
 ```
 
-``` {r sex_difference, echo = FALSE}
+# Model outputs
+
+``` {r model_outputs, include = FALSE}
+# Function to get cox ph tidy output
+cox_tidy <-  function(model) {
+  tidy(model, exponentiate = T, conf.int = T) %>%
+    mutate(
+      cox_ph = paste0(
+        round(estimate, 2), " (", round(conf.low, 2), ", ", round(conf.high, 2), ")"
+      )
+    ) %>% 
+    select(term, cox_ph)
+}
+
+# Function to get survreg ph tidy output
+survreg_tidy <- function(surv_reg_object) {
+  survreg_summary <- summary(surv_reg_object)
+  scale_par <- survreg_summary$scale
+  shape_par <- 1 / scale_par
+  tidy_summary <- tidy(surv_reg_object, conf.int = T) %>% 
+    filter(term != "(Intercept)") %>%
+    filter(term != "Log(scale)") %>% 
+    mutate(
+      exp_estimate = exp(estimate * -1 * shape_par), # see webpage in project folder for reference on this method to convert survreg output to proportional hazards
+      exp_conf.low = exp(conf.high * -1 * shape_par), # high and low are swapped due to multiplying by -1
+      exp_conf.high = exp(conf.low * -1 * shape_par)
+    ) %>% 
+    mutate(
+      estimate_ci = paste0(
+        round(exp_estimate, 2), " (", round(exp_conf.low, 2), ", ", round(exp_conf.high, 2), ")"
+      )
+    ) %>% 
+    select(term, estimate_ci)
+  tidy_summary
+}
+
+# Cox PH estimates
+cox_objects <- list(cox_age, cox_sex, cox_los, cox_cohort, cox_chf)
+
+cox_table <- tibble()
+for (c in cox_objects) {
+  temp <- cox_tidy(c)
+  cox_table <- bind_rows(cox_table, temp)
+}
+
+# Exponential model estimates
+exp_objects <- list(exp_age, exp_sex, exp_los, exp_cohort, exp_chf)
+exp_table <- tibble()
+for (e in exp_objects) {
+  temp <- survreg_tidy(e)
+  exp_table <- bind_rows(exp_table, temp)
+}
+
+# Weibull model estimates
+wb_objects <- list(weibull_age, weibull_sex, weibull_los, weibull_cohort, weibull_chf)
+wb_table <- tibble()
+for (w in wb_objects) {
+  temp <- survreg_tidy(w)
+  wb_table <- bind_rows(wb_table, temp)
+}
+
+univ_table <- bind_cols(cox_table, exp_table, wb_table)
+```
+
+``` {r univ_table, echo = FALSE}
+univ_table %>%
+  mutate(
+    Term = ifelse(term...1 == "age", "Age (years)", ifelse(
+      term...1 == "sex", "Sex (female; male is reference)", ifelse(
+        term...1 == "lenstay", "Length of stay (days)", ifelse(
+          term...1 == "yrgrp", "Cohort year", ifelse(
+            term...1 == "chf", "Left heart failure complications", NA
+          )
+        )
+      )
+    ))
+  ) %>% 
+  select(
+    Term,
+    "Cox proportional hazards model" = cox_ph,
+    "Exponential survival model" = estimate_ci...4,
+    "Weibull survival model" = estimate_ci...6
+  ) %>% 
+  kbl(
+    booktabs = T,
+    caption = "Unadjusted hazard ratio estimates and 95\\% confidence intervals from three survival models fitted to the \\textit{WHAS} data set."
+  ) %>% 
+  add_header_above(
+    c(" " = 1, "Hazard ratio estimates (95% confidence interval)" = 3)
+  ) %>% 
+  kable_styling(latex_options = "scale_down")
+
+```
+
+``` {r multivariate_table, echo = FALSE}
+multi_table <- bind_cols(
+  cox_tidy(cox_multi),
+  survreg_tidy(exp_multi),
+  survreg_tidy(weibull_multi)
+)
+
+multi_table %>%
+  mutate(
+    Term = ifelse(term...1 == "age", "Age (years)", ifelse(
+      term...1 == "sex", "Sex (female; male is reference)", ifelse(
+        term...1 == "lenstay", "Length of stay (days)", ifelse(
+          term...1 == "yrgrp", "Cohort year", ifelse(
+            term...1 == "chf", "Left heart failure complications", NA
+          )
+        )
+      )
+    ))
+  ) %>% 
+  select(
+    Term,
+    "Cox proportional hazards model" = cox_ph,
+    "Exponential survival model" = estimate_ci...4,
+    "Weibull survival model" = estimate_ci...6
+  ) %>% 
+  kbl(
+    booktabs = T,
+    caption = "Adjusted hazard ratio estimates and 95\\% confidence intervals from three survival models fitted to the \\textit{WHAS} data set."
+  ) %>% 
+  add_header_above(
+    c(" " = 1, "Hazard ratio estimates (95% confidence interval)" = 3)
+  ) %>% 
+  kable_styling(latex_options = "scale_down")
+
+```
+
+``` {r sex_difference, echo = FALSE, fig.cap = "Kaplan-Meier survival curves by sex."}
 st <- survfit(
   Surv(time = lenfol, event = fstat) ~ sex,
   data = d
@@ -269,14 +357,75 @@ ggsurvplot(
   st, data = d,
   xlab = "Time",
   legend.labs = c("Male", "Female"),
-  risk.table = "abs_pct",
-  pval = T, pval.coord = c(30, 0.75),
-  pval.method = T, pval.method.coord = c(30, 0.85),
+  # risk.table = "abs_pct",
+  pval = T, pval.coord = c(30, 0.15),
+  pval.method = T, pval.method.coord = c(30, 0.25),
   fontsize = 2.5
 )
 ```
 
-``` {r model_comparison, echo = FALSE}
+
+``` {r model_comparison_sex, echo = FALSE, fig.cap = "Comparison of model fit for the Cox proportional hazards, exponential, and Weibull models, using sex as a covariate. Solid lines: male; dotted lines: female."}
+# This code chunk is thanks to https://rstudio-pubs-static.s3.amazonaws.com/5564_bc9e2d9a458c4660aa82882df90b7a6b.html
+# KM by sex
+km_chf <- npsurv(
+  Surv(time = lenfol, event = fstat) ~ sex,
+  data = d
+)
+
+## Plot KM curves
+survplot(fit  = km_chf,
+         conf = c("none","bands","bars")[1],
+         xlab = "", ylab = "Survival",
+         label.curves = TRUE,                     # label curves directly
+         # time.inc = 100,                          # time increment
+         n.risk   = TRUE,                         # show number at risk
+         )
+
+## Plot Cox prediction (use survfit)
+lines(
+  survfit(cox_sex, newdata = data.frame(sex = 0:1)), 
+  col = "green", lty = 1:2, mark.time = FALSE
+)
+
+## Define a function to plot survreg prediction by gender
+survreg.curves <- function(
+  model, 
+  col = "black", 
+  values = c(0, 1),
+  seq.quantiles = seq(from = 0.00, to = 1.00, by = 0.01)
+) {
+  l_ply(
+    values, 
+    function(X) {
+      lines(x = predict(
+        model,                    # survreg object to use
+        newdata = data.frame(sex = X), # Dataset to perform prediction for
+        type = "quantile",                # Predict survival time (X-axis values) given event quantile
+        p = seq.quantiles),               # Vector of quantiles (Y-axis values)
+        y = (1 - seq.quantiles),              # Change to survival quantile (proportion remaining)
+        col = col, lty = X + 1)               # COLor and Line TYpe
+    }
+  )
+}
+
+## Plot exponential model prediction
+survreg.curves(exp_sex, "red")
+
+## Plot Weibull model prediction
+survreg.curves(weibull_sex, "blue")
+
+## Add legends
+legend(
+  x = "topright",
+  legend = c("Kaplan-Meier", "Cox (Efron)", "Exponential", "Weibull"),
+  lwd = 2, bty = "n",
+  col = c("black", "green", "red", "blue")
+)
+
+```
+
+``` {r model_comparison_chf, echo = FALSE, fig.cap = "Comparison of model fit for the Cox proportional hazards, exponential, and Weibull models, using the presence of left heart failure complications as a covariate. Solid lines: complications absent; dotted lines: complications present."}
 # This code chunk is thanks to https://rstudio-pubs-static.s3.amazonaws.com/5564_bc9e2d9a458c4660aa82882df90b7a6b.html
 # KM by lvh
 km_chf <- npsurv(
@@ -295,7 +444,7 @@ survplot(fit  = km_chf,
 
 ## Plot Cox prediction (use survfit)
 lines(
-  survfit(cox_univ_chf, newdata = data.frame(chf = 0:1)), 
+  survfit(cox_chf, newdata = data.frame(chf = 0:1)), 
   col = "green", lty = 1:2, mark.time = FALSE
 )
 
