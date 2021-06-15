@@ -10,6 +10,8 @@ bibliography: references.bib
 
 Data file used for this assignment: *whas.xls*
 
+Analyses were conducted in R (@R-base). In addition, the *knitr* (@knitr1, @knitr2, @knitr3), *plyr* (@plyr), *rms* (@rms), *survival* (@survival-package, @survival-book), *survminer* (@survminer) and *tidyverse* (@tidy) packages were used. The code used to generate *Figures 2 and 3* was adapted from https://rstudio-pubs-static.s3.amazonaws.com/5564_bc9e2d9a458c4660aa82882df90b7a6b.html. 
+
 ``` {r setup, include = FALSE}
 
 knitr::opts_chunk$set(message = FALSE, warning = FALSE)
@@ -217,7 +219,10 @@ weibull_multi <- survreg(
 summary(weibull_multi)
 ```
 
-# Model outputs
+## Model outputs
+Three survival models were fit to the *WHAS* data set: a Cox proportional hazards (CPH) model and two parametric models; one with an exponential distribution, and another with a Weibull distribution. In general, the Weibull model produced estimates that were very similar to the CPH model. The exponential model's estimates were notably different for some covariates.
+
+The unadjusted hazard ratio estimtes are presented in *Table 1* with 95% confidence intervals. The effect of age, sex, and length of stay on survival were similar across the three models. In the CPH model, each one year increase in age was associated with a 4% increase in the hazard of death, while being female was associated with a 47% increase in hazard. These effects were statistically significant. The effect of length of stay was close to null, and only statistically significant in the exponential model. In both the CPH and Weibull model, the effect of increasing cohort year was associated with a reduced hazard, though was not statistically significant in either. However, an effect in the opposite direction was predicted by the exponential model (32% increase in hazard). Lastly, all models predicted a increase in hazard in the presence of left heart failure complications (2.86 times increase in hazard in the CPH model), though the exponential model was notably larger in magnitude (3.42 times increase in hazard predicted). These effects were statistically significant.
 
 ``` {r model_outputs, include = FALSE}
 # Function to get cox ph tidy output
@@ -302,7 +307,7 @@ univ_table %>%
   ) %>% 
   kbl(
     booktabs = T,
-    caption = "Unadjusted hazard ratio estimates and 95\\% confidence intervals from three survival models fitted to the \\textit{WHAS} data set."
+    caption = "Table 1. Unadjusted hazard ratio estimates and 95% confidence intervals from three survival models fitted to the *WHAS* data set."
   ) %>% 
   add_header_above(
     c(" " = 1, "Hazard ratio estimates (95% confidence interval)" = 3)
@@ -310,6 +315,8 @@ univ_table %>%
   kable_styling(latex_options = "scale_down")
 
 ```
+
+In the adjusted models (*Table 2*), the estimated effect of age was similar to the unadjusted models. The estimated effect of sex was muted and no longer statistically signifcant in any model. A longer length of stay was protective (4% times decrease in hazard for each additional day in hospital in the CPH model), as was being from a later cohort year (20% decrease in hazard for each additional year). In contrast to the unadjusted analysis, both these effects were statistically significant in the CPH and Weibull model in the adjusted analysis. The effect of left heart failure complications were slightly smaller in magnitude in the adjusted model.
 
 ``` {r multivariate_table, echo = FALSE}
 multi_table <- bind_cols(
@@ -338,7 +345,7 @@ multi_table %>%
   ) %>% 
   kbl(
     booktabs = T,
-    caption = "Adjusted hazard ratio estimates and 95\\% confidence intervals from three survival models fitted to the \\textit{WHAS} data set."
+    caption = "Table 2. Adjusted hazard ratio estimates and 95% confidence intervals from three survival models fitted to the *WHAS* data set."
   ) %>% 
   add_header_above(
     c(" " = 1, "Hazard ratio estimates (95% confidence interval)" = 3)
@@ -347,7 +354,9 @@ multi_table %>%
 
 ```
 
-``` {r sex_difference, echo = FALSE, fig.cap = "Kaplan-Meier survival curves by sex."}
+Kaplan-Meier survival curves stratified by sex are presented in *Figure 1*. The difference in survival between sex was statistically significant (p-value from a log-rank test = 0.0021).
+
+``` {r sex_difference, echo = FALSE, fig.cap = "Figure 1. Kaplan-Meier survival curves by sex."}
 st <- survfit(
   Surv(time = lenfol, event = fstat) ~ sex,
   data = d
@@ -364,8 +373,11 @@ ggsurvplot(
 )
 ```
 
+To compare model fit, the three survival models were compared visually to Kaplan-Meier curves for the two binary covariates, sex (*Figure 2*) and presence of left heart failure complications (*Figure 3*). In both figures, it can be seen that both the Cox proportional hazards model and the Weibull model fit the data reasonably well. The fit of the exponential model is clearly inferior.
 
-``` {r model_comparison_sex, echo = FALSE, fig.cap = "Comparison of model fit for the Cox proportional hazards, exponential, and Weibull models, using sex as a covariate. Solid lines: male; dotted lines: female."}
+Considering the model outputs and comparing model fit visually, both the Cox proportional hazards model and the Weibull model perform similarly and fit the data well. The exponential model is a poorer fit to the data, with effect estimates that for some covariates deviated notably from the other two models.
+
+``` {r model_comparison_sex, echo = FALSE, fig.cap = "Figure 2. Comparison of model fit for the Cox proportional hazards, exponential, and Weibull models, using sex as a covariate. Solid lines: male; dotted lines: female."}
 # This code chunk is thanks to https://rstudio-pubs-static.s3.amazonaws.com/5564_bc9e2d9a458c4660aa82882df90b7a6b.html
 # KM by sex
 km_chf <- npsurv(
@@ -425,7 +437,7 @@ legend(
 
 ```
 
-``` {r model_comparison_chf, echo = FALSE, fig.cap = "Comparison of model fit for the Cox proportional hazards, exponential, and Weibull models, using the presence of left heart failure complications as a covariate. Solid lines: complications absent; dotted lines: complications present."}
+``` {r model_comparison_chf, echo = FALSE, fig.cap = "Figure 3. Comparison of model fit for the Cox proportional hazards, exponential, and Weibull models, using the presence of left heart failure complications as a covariate. Solid lines: complications absent; dotted lines: complications present."}
 # This code chunk is thanks to https://rstudio-pubs-static.s3.amazonaws.com/5564_bc9e2d9a458c4660aa82882df90b7a6b.html
 # KM by lvh
 km_chf <- npsurv(
@@ -484,3 +496,5 @@ legend(
 )
 
 ```
+
+## References
