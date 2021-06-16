@@ -1,16 +1,16 @@
 ---
 title: "Biostatistics 3 Assignment 3"
 author: "Kevin Lee (LXXKEV004)"
-date: "03/06/2021"
 output: 
   html_document:
     theme: cosmo
+    fig_height: 4.5
+    fig_width: 6
 bibliography: references.bib
 ---
+Date submitted: 16 June 2021
 
 Data file used for this assignment: *whas.xls*
-
-Analyses were conducted in R (@R-base). In addition, the *knitr* (@knitr1, @knitr2, @knitr3), *plyr* (@plyr), *rms* (@rms), *survival* (@survival-package, @survival-book), *survminer* (@survminer) and *tidyverse* (@tidy) packages were used. The code used to generate *Figures 2 and 3* was adapted from https://rstudio-pubs-static.s3.amazonaws.com/5564_bc9e2d9a458c4660aa82882df90b7a6b.html. 
 
 ``` {r setup, include = FALSE}
 
@@ -41,7 +41,6 @@ d %>% count(yrgrp)
 
 ``` {r cph_age, include = FALSE}
 # Age
-# Distribution
 cox_age <- coxph(
   Surv(time = lenfol, event = fstat) ~ age,
   data = d
@@ -219,10 +218,10 @@ weibull_multi <- survreg(
 summary(weibull_multi)
 ```
 
-## Model outputs
-Three survival models were fit to the *WHAS* data set: a Cox proportional hazards (CPH) model and two parametric models; one with an exponential distribution, and another with a Weibull distribution. In general, the Weibull model produced estimates that were very similar to the CPH model. The exponential model's estimates were notably different for some covariates.
+### Model outputs
+Three survival models were fit to the *WHAS* data set: a Cox proportional hazards (CPH) model and two parametric models: one with an exponential distribution, and another with a Weibull distribution. In general, the Weibull model produced estimates that were very similar to the CPH model. The exponential model's estimates were notably different for some covariates.
 
-The unadjusted hazard ratio estimtes are presented in *Table 1* with 95% confidence intervals. The effect of age, sex, and length of stay on survival were similar across the three models. In the CPH model, each one year increase in age was associated with a 4% increase in the hazard of death, while being female was associated with a 47% increase in hazard. These effects were statistically significant. The effect of length of stay was close to null, and only statistically significant in the exponential model. In both the CPH and Weibull model, the effect of increasing cohort year was associated with a reduced hazard, though was not statistically significant in either. However, an effect in the opposite direction was predicted by the exponential model (32% increase in hazard). Lastly, all models predicted a increase in hazard in the presence of left heart failure complications (2.86 times increase in hazard in the CPH model), though the exponential model was notably larger in magnitude (3.42 times increase in hazard predicted). These effects were statistically significant.
+The unadjusted hazard ratio estimates are presented in *Table 1* with 95% confidence intervals. The effect of age, sex, and length of stay on survival were similar across the three models. In the CPH model, each one year increase in age was associated with a 4% increase in the hazard of death, while being female was associated with a 47% increase in hazard. These effects were statistically significant. Each additional day in hospital (length of stay) was predicted a 1-3% decrease in hazard amongst the three models, but only reached statistical significance in the exponential model. In both the CPH and Weibull model, the effect of increasing cohort year was associated with a reduced hazard, though was not statistically significant in either. However, an effect in the opposite direction was predicted by the exponential model (32% increase in hazard). Lastly, all models predicted a increase in hazard in the presence of left heart failure complications (2.86 times increase in hazard in the CPH model), though the exponential model was notably larger in magnitude (3.42 times increase in hazard predicted). These effects were statistically significant.
 
 ``` {r model_outputs, include = FALSE}
 # Function to get cox ph tidy output
@@ -245,13 +244,13 @@ survreg_tidy <- function(surv_reg_object) {
     filter(term != "(Intercept)") %>%
     filter(term != "Log(scale)") %>% 
     mutate(
-      exp_estimate = exp(estimate * -1 * shape_par), # see webpage in project folder for reference on this method to convert survreg output to proportional hazards
-      exp_conf.low = exp(conf.high * -1 * shape_par), # high and low are swapped due to multiplying by -1
-      exp_conf.high = exp(conf.low * -1 * shape_par)
+      haz_estimate = exp(estimate * -1 * shape_par), # see webpage in project folder for reference on this method to convert survreg output to proportional hazards
+      haz_conf.low = exp(conf.high * -1 * shape_par), # high and low are swapped due to multiplying by -1
+      haz_conf.high = exp(conf.low * -1 * shape_par)
     ) %>% 
     mutate(
       estimate_ci = paste0(
-        round(exp_estimate, 2), " (", round(exp_conf.low, 2), ", ", round(exp_conf.high, 2), ")"
+        round(haz_estimate, 2), " (", round(haz_conf.low, 2), ", ", round(haz_conf.high, 2), ")"
       )
     ) %>% 
     select(term, estimate_ci)
@@ -290,7 +289,7 @@ univ_table <- bind_cols(cox_table, exp_table, wb_table)
 univ_table %>%
   mutate(
     Term = ifelse(term...1 == "age", "Age (years)", ifelse(
-      term...1 == "sex", "Sex (female; male is reference)", ifelse(
+      term...1 == "sex", "Sex (female; *male is reference*)", ifelse(
         term...1 == "lenstay", "Length of stay (days)", ifelse(
           term...1 == "yrgrp", "Cohort year", ifelse(
             term...1 == "chf", "Left heart failure complications", NA
@@ -300,7 +299,7 @@ univ_table %>%
     ))
   ) %>% 
   select(
-    Term,
+    "Covariate" = Term,
     "Cox proportional hazards model" = cox_ph,
     "Exponential survival model" = estimate_ci...4,
     "Weibull survival model" = estimate_ci...6
@@ -316,7 +315,7 @@ univ_table %>%
 
 ```
 
-In the adjusted models (*Table 2*), the estimated effect of age was similar to the unadjusted models. The estimated effect of sex was muted and no longer statistically signifcant in any model. A longer length of stay was protective (4% times decrease in hazard for each additional day in hospital in the CPH model), as was being from a later cohort year (20% decrease in hazard for each additional year). In contrast to the unadjusted analysis, both these effects were statistically significant in the CPH and Weibull model in the adjusted analysis. The effect of left heart failure complications were slightly smaller in magnitude in the adjusted model.
+In the adjusted models (*Table 2*), the estimated effect of age was similar to the unadjusted models. The estimated effect of sex was muted and no longer statistically significant in any model. A longer length of stay was protective (4% times decrease in hazard for each additional day in hospital in the CPH model), as was being from a later cohort year (20% decrease in hazard for each additional year in the CPH model). In contrast to the unadjusted analysis, both these effects were statistically significant in the CPH and Weibull model in the adjusted analysis. The effect of left heart failure complications were  smaller in magnitude in the adjusted models compared to the unadjusted models.
 
 ``` {r multivariate_table, echo = FALSE}
 multi_table <- bind_cols(
@@ -328,7 +327,7 @@ multi_table <- bind_cols(
 multi_table %>%
   mutate(
     Term = ifelse(term...1 == "age", "Age (years)", ifelse(
-      term...1 == "sex", "Sex (female; male is reference)", ifelse(
+      term...1 == "sex", "Sex (female; *male is reference*)", ifelse(
         term...1 == "lenstay", "Length of stay (days)", ifelse(
           term...1 == "yrgrp", "Cohort year", ifelse(
             term...1 == "chf", "Left heart failure complications", NA
@@ -338,7 +337,7 @@ multi_table %>%
     ))
   ) %>% 
   select(
-    Term,
+    "Covariate" = Term,
     "Cox proportional hazards model" = cox_ph,
     "Exponential survival model" = estimate_ci...4,
     "Weibull survival model" = estimate_ci...6
@@ -354,6 +353,7 @@ multi_table %>%
 
 ```
 
+### Sex differences
 Kaplan-Meier survival curves stratified by sex are presented in *Figure 1*. The difference in survival between sex was statistically significant (p-value from a log-rank test = 0.0021).
 
 ``` {r sex_difference, echo = FALSE, fig.cap = "Figure 1. Kaplan-Meier survival curves by sex."}
@@ -364,7 +364,7 @@ st <- survfit(
 
 ggsurvplot(
   st, data = d,
-  xlab = "Time",
+  xlab = "Time (days)",
   legend.labs = c("Male", "Female"),
   # risk.table = "abs_pct",
   pval = T, pval.coord = c(30, 0.15),
@@ -373,7 +373,8 @@ ggsurvplot(
 )
 ```
 
-To compare model fit, the three survival models were compared visually to Kaplan-Meier curves for the two binary covariates, sex (*Figure 2*) and presence of left heart failure complications (*Figure 3*). In both figures, it can be seen that both the Cox proportional hazards model and the Weibull model fit the data reasonably well. The fit of the exponential model is clearly inferior.
+### Assessing model fit
+To compare model fit, the three survival models were compared visually to Kaplan-Meier curves for the two binary covariates, sex (*Figure 2*) and presence of left heart failure complications (*Figure 3*). In both figures, it can be seen that both the Cox proportional hazards model and the Weibull model fit the data well. The fit of the exponential model to the data is clearly inferior, though it is worth noting that the curve of one level of the covariate relative to the other (e.g. male vs female) of the exponential model is not too dissimilar to those of the other models. As such reasonable proportional hazard estimates could be expected, which is what we (mostly) observe in the model outputs seen earlier.
 
 Considering the model outputs and comparing model fit visually, both the Cox proportional hazards model and the Weibull model perform similarly and fit the data well. The exponential model is a poorer fit to the data, with effect estimates that for some covariates deviated notably from the other two models.
 
@@ -388,7 +389,7 @@ km_chf <- npsurv(
 ## Plot KM curves
 survplot(fit  = km_chf,
          conf = c("none","bands","bars")[1],
-         xlab = "", ylab = "Survival",
+         xlab = "Time (days)", ylab = "Survival",
          label.curves = TRUE,                     # label curves directly
          # time.inc = 100,                          # time increment
          n.risk   = TRUE,                         # show number at risk
@@ -448,7 +449,7 @@ km_chf <- npsurv(
 ## Plot KM curves
 survplot(fit  = km_chf,
          conf = c("none","bands","bars")[1],
-         xlab = "", ylab = "Survival",
+         xlab = "Time (days)", ylab = "Survival",
          label.curves = TRUE,                     # label curves directly
          # time.inc = 100,                          # time increment
          n.risk   = TRUE,                         # show number at risk
@@ -498,3 +499,4 @@ legend(
 ```
 
 ## References
+Analyses were conducted in R (@R-base). In addition, the *knitr* (@knitr1, @knitr2, @knitr3), *plyr* (@plyr), *rms* (@rms), *survival* (@survival-package, @survival-book), *survminer* (@survminer) and *tidyverse* (@tidy) packages were used. The code used to generate *Figures 2 and 3* was adapted from an example online (@bio223). 
